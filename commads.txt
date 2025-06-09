@@ -1,0 +1,30 @@
+#CREAR ENTORNO VIRTUAL
+    python -m venv env
+# ACTIVAR ENTORNO VIRTUAL
+    env/Scripts/activate
+# DESACTIVAR ENTORNO VIRTUAL
+    deactive
+# INSTALAR requirements.txt
+    pip install -r requirements.txt
+
+                                - - - DJANGO - - -
+*INSTALACIÓN*
+    py -m pip install Django==5.2.2
+*CREACIÓN DE PROYECTO*
+    django-admin startproject [NAME]
+*CREACIÓN DE APP*
+    python manage.py startapp [NAME]
+***MIGRACIONES***
+--> Cuando se haga cambios en la BD
+# CREAR MIGRACIONES 
+    python manage.py makemigrations
+# MIGRAR
+    python manage.py migrate
+# VER MIGRACIONES PENDIENTES
+    python manage.py showmigrations
+
+***APP**
+# EJECUTAR DJANGO
+    python manage.py runserver
+# CREAR SUPERUSUARIO
+    python python manage.py createsuperuser
