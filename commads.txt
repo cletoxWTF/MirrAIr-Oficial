@@ -33,6 +33,8 @@
                                  - - - VUE.JS - - -
 *INSTALACIÓN*
     npm install -g @vue/cli
+*INSTALAR AXIOS*
+    npm install axios
 *CREACIÓN DE PROYECTO*
      vue create [NAME]
      #NOTA: ELEGIR ENTRE V3 O V2 SEGÚN SE NECESITE
