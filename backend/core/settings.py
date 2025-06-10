@@ -171,3 +171,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# VUE.JS
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [BASE_DIR / 'frontend/dist/static']  # Si colocas los archivos compilados aquí
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+

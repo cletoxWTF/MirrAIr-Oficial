@@ -1,5 +1,11 @@
 <template>
   <div class="about">
-    <h1>This is an about page</h1>
+    <h1>Acerca de nosotros</h1>
+    <p>Soy un estudiante con un proyecto en Inteligencia Artificial</p>
   </div>
 </template>
+<script>
+  export default {
+  name: 'AboutView'
+  };
+</script>

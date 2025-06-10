@@ -1,26 +1,39 @@
 <template>
-  <navbar-component-vue>
-  </navbar-component-vue>
-  <router-view/>
-
-  <footer-component-vue>
-  </footer-component-vue>
-
+  <div id="app">
+    <NavbarComponent />
+    <main>
+      <router-view />
+    </main>
+    <FooterComponent />
+  </div>
 </template>
 
 <script>
-  import NavbarComponentVue from './components/NavbarComponent.vue'
-  import FooterComponentVue from './components/FooterComponent.vue'
-  
-  export default{
-    name:'App',
-    components:{
-      NavbarComponentVue,
-      FooterComponentVue
-    }
+import NavbarComponent from './components/NavbarComponent.vue';
+import FooterComponent from './components/FooterComponent.vue';
+
+export default {
+  name: 'App',
+  components: {
+    NavbarComponent,
+    FooterComponent
   }
+};
 </script>
 
 <style>
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
 
+main {
+  flex: 1;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
 </style>
