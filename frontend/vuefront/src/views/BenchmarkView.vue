@@ -5,16 +5,37 @@
     <div class="input-section">
       <div class="option-card">
         <h2>Escriba las reglas o adjunte un archivo</h2>
-        <textarea v-model="rules" placeholder="Escribe tus reglas aquí..." class="rules-textarea"></textarea>
+        
+
+        <textarea 
+          v-model="rules" 
+          placeholder="Escribe tus reglas aquí..." 
+          class="rules-textarea"
+          :disabled="isFileAttached" 
+          @input="handleTextInput"
+        ></textarea>
         
         <div class="buttons-row">
           <div class="file-upload">
-            <input type="file" accept=".txt,.hrf" @change="handleFileUpload" class="file-input" id="fileInput">
+            <input 
+              type="file" 
+              accept=".txt,.hrf" 
+              @change="handleFileUpload" 
+              class="file-input" 
+              id="fileInput"
+              :disabled="isTextEntered"
+            />
             <label for="fileInput" class="upload-button">Adjuntar archivo (.txt o .hrf)</label>
             <span v-if="fileName" class="file-name">{{ fileName }}</span>
           </div>
-          
-          <button @click="submitBenchmark" class="submit-button">Enviar</button>
+
+          <button 
+            @click="submitBenchmark" 
+            class="submit-button" 
+            :disabled="!isTextEntered && !isFileAttached"
+          >
+            Enviar
+          </button>
         </div>
       </div>
     </div>
@@ -47,14 +68,26 @@ export default {
       rules: '',
       file: null,
       fileName: '',
+      isTextEntered: false, // Controla si el usuario ha escrito en el textarea
+      isFileAttached: false, // Controla si se ha adjuntado un archivo
       loading: false
     };
   },
   methods: {
+    // Función para manejar cuando se escribe en el textarea
+    handleTextInput() {
+      this.isTextEntered = this.rules.trim() !== '';
+      this.isFileAttached = false; // Si escribe, desactivar la opción de adjuntar archivo
+    },
+    
+    // Función para manejar la carga de archivo
     handleFileUpload(event) {
       this.file = event.target.files[0];
       this.fileName = this.file ? this.file.name : '';
+      this.isFileAttached = !!this.file;
+      this.isTextEntered = false; // Si adjunta archivo, desactivar la opción de escribir
     },
+    
     async submitBenchmark() {
       this.loading = true;
       
@@ -71,18 +104,6 @@ export default {
       } finally {
         this.loading = false;
       }
-    },
-    downloadChatGPT() {
-      alert('Descargando traducción de ChatGPT...');
-      // Lógica real para descargar el resultado de ChatGPT
-    },
-    downloadDeepSeek() {
-      alert('Descargando traducción de DeepSeek...');
-      // Lógica real para descargar el resultado de DeepSeek
-    },
-    compareResults() {
-    // Lógica para comparar resultados
-    this.$router.push('/metrics');
     }
   }
 };
