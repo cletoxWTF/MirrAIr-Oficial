@@ -4,7 +4,8 @@
       <router-link to="/" class="logo">MirrAIr</router-link>
       <div class="nav-links">
         <router-link to="/">Inicio</router-link>
-        <router-link to="/about">Acerca de</router-link>
+        <router-link to="/about">Acerca de nosotros</router-link>
+        <router-link to="/benchmark">Benchmarking</router-link>
       </div>
     </div>
   </nav>
@@ -54,6 +55,25 @@ export default {
 
 .router-link-exact-active {
   color: #42b983;
+  font-weight: bold;
+}
+
+.nav-links a {
+  color: #ecf0f1;
+  text-decoration: none;
+  margin-left: 25px;
+  font-size: 1.1rem;
+  transition: color 0.3s;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.nav-links a:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.router-link-exact-active {
+  background-color: #42b983;
   font-weight: bold;
 }
 </style>
