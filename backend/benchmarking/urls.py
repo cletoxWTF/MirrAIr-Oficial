@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import TraductionList, TraductionDetail
+from .views import TraductionViewSet
+from rest_framework.routers import DefaultRouter
 
-urlpatterns = [
-    path('traductions/', TraductionList.as_view(), name='traduction-list'),
-    path('traductions/<int:pk>', TraductionDetail.as_view(), name='traduction-detail'),
-]
+router = DefaultRouter()
+router.register('traductions', TraductionViewSet, basename='traductions')
+
+urlpatterns = router.urls

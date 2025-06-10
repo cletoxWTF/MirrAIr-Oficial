@@ -3,6 +3,7 @@ from django.db import models
 # MODELO DE TRADUCCIÓN
 
 class Traduction(models.Model):
+    #AQUI AGREGAR IMAGEN EN CASO DE NECESITAR
     name = models.CharField(max_length=255, verbose_name="Nombre")
     description = models.TextField(verbose_name="Descripción")
     score = models.IntegerField(verbose_name="Calificación")

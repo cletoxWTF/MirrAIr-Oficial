@@ -28,3 +28,16 @@
     python manage.py runserver
 # CREAR SUPERUSUARIO
     python python manage.py createsuperuser
+
+
+                                 - - - VUE.JS - - -
+*INSTALACIÓN*
+    npm install -g @vue/cli
+*CREACIÓN DE PROYECTO*
+     vue create [NAME]
+     #NOTA: ELEGIR ENTRE V3 O V2 SEGÚN SE NECESITE
+
+***APP**
+# EJECUTAR VUE.JS
+    npm run serve
+                   

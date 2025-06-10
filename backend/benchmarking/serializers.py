@@ -4,4 +4,4 @@ from .models import Traduction
 class TraductionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Traduction
-        fields = ('name', 'description', 'score', 'votes', 'finalScore')
+        fields = ('id','name', 'description', 'score', 'votes', 'finalScore')

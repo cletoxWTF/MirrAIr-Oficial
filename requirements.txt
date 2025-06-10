@@ -1,5 +1,13 @@
 #DJANGO
-django==5.2.2
-djangorestframework
-markdown
-django-filter
+Django==5.2.2
+djangorestframework==3.16.0
+Markdown==3.8
+django-filter==25.1
+asgiref==3.8.1
+sqlparse==0.5.3
+tzdata==2025.2
+#POSTGRESQL
+psycopg==3.2.9
+
+#NODE.JS V22.16.0 DIRECT OF INTERNET
+#INSTALL VUE.JS v5.0.8 FROM NODE.JS
