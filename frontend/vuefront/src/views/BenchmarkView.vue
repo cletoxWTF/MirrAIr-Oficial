@@ -193,7 +193,7 @@ export default {
           method: "POST",
           headers: {
             Authorization:
-              "Bearer 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",
+              "Bearer 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",
             "Content-Type": "application/json",
             "HTTP-Referer": "http://localhost:8080/", // Opcional
             "X-Title": "MirrAIr", // Opcional
@@ -257,7 +257,13 @@ export default {
     },
 
     compareResults() {
-      this.$router.push({ name: "metrics" });
+      this.$router.push({
+        name: "metrics",
+        params: {
+          chatgpt: this.chatGPTResponse,
+          deepseek: this.deepSeekResponse,
+        },
+      });
     },
   },
 };

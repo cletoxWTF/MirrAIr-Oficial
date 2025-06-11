@@ -37,6 +37,8 @@
     npm install axios
 *INSTALAR VUE PARA DIAGRAMA DE PROGRESO*
     npm install vue-progress-circle
+*INSTALAR PARA LAS MÉTRICAS*
+    npm install fastest-levenshtein
 *CREACIÓN DE PROYECTO*
      vue create [NAME]
      #NOTA: ELEGIR ENTRE V3 O V2 SEGÚN SE NECESITE
