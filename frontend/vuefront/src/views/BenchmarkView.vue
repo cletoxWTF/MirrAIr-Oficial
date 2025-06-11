@@ -72,7 +72,13 @@
     </div>
 
     <div class="compare-section">
-      <button @click="compareResults" class="compare-button">Comparar</button>
+      <button 
+        @click="compareResults" 
+        class="compare-button" 
+        :disabled="!canCompare"
+      >
+        Comparar
+      </button>
     </div>
   </div>
 </template>
@@ -94,6 +100,12 @@ export default {
       deepSeekResponse: "", // Respuesta de DeepSeek
       errorMessage: "", // Mensaje de error
     };
+  },
+  computed: {
+    // Esta propiedad computada se encarga de habilitar el botón "Comparar" solo cuando ambas respuestas estén disponibles.
+    canCompare() {
+      return this.chatGPTResponse && this.deepSeekResponse;
+    }
   },
   methods: {
     // Función para manejar cuando se escribe en el textarea
@@ -181,7 +193,7 @@ export default {
           method: "POST",
           headers: {
             Authorization:
-              "Bearer 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",
+              "Bearer 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",
             "Content-Type": "application/json",
             "HTTP-Referer": "http://localhost:8080/", // Opcional
             "X-Title": "MirrAIr", // Opcional
@@ -245,7 +257,7 @@ export default {
     },
 
     compareResults() {
-      alert("Comparando resultados...");
+      this.$router.push({ name: "metrics" });
     },
   },
 };
