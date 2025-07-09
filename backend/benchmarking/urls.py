@@ -1,8 +1,7 @@
 from django.urls import path
-from .views import TraductionViewSet
-from rest_framework.routers import DefaultRouter
+from .views import benchmark_api, metrics_api
 
-router = DefaultRouter()
-router.register('traductions', TraductionViewSet, basename='traductions')
-
-urlpatterns = router.urls
+urlpatterns = [
+    path('benchmark/', benchmark_api, name='benchmark-api'),
+    path('metrics/<int:result_id>/', metrics_api, name='metrics-api'),
+]

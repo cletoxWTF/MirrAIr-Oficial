@@ -9,6 +9,22 @@ tzdata==2025.2
 django-cors-headers==4.7.0
 #POSTGRESQL
 psycopg==3.2.9
-
+#OPEN AI
+openai==1.93.0
+#COMPLEMENTS
+python-dotenv
+levenshtein
+requests
+scikit-learn 
+textstat
+nltk==3.9.1
 #NODE.JS V22.16.0 DIRECT OF INTERNET
 #INSTALL VUE.JS v5.0.8 FROM NODE.JS
+
+
+#FOR PUNK FROM NLTK
+#ENTER ON CONSOLE: 
+#   python 
+#   import nltk
+#   nltk.download('punkt')
+#   exit

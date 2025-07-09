@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import Traduction
+from rest_framework import serializers
+from .models import BenchmarkResult
 
-class TraductionSerializer(serializers.ModelSerializer):
+class BenchmarkResultSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Traduction
-        fields = ('id','name', 'description', 'score', 'votes', 'finalScore')
+        model = BenchmarkResult
+        fields = '__all__'

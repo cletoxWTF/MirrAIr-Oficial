@@ -3,6 +3,7 @@
     <h1 class="title">RESULTADOS</h1>
 
     <div class="metrics">
+      <!-- SIMILITUD -->
       <div class="metric">
         <div class="progress-circle">
           <svg width="100" height="100">
@@ -22,9 +23,10 @@
           </svg>
         </div>
         <h2>SIMILITUD</h2>
-        <p class="percentage">{{ similarity }}%</p>
+        <p class="percentage">{{ similarity.toFixed(2) }}%</p>
       </div>
 
+      <!-- COMPLEJIDAD CHATGPT -->
       <div class="metric">
         <div class="progress-circle">
           <svg width="100" height="100">
@@ -37,14 +39,37 @@
               stroke-width="10"
               fill="none"
               :stroke-dasharray="2 * Math.PI * 45"
-              :stroke-dashoffset="2 * Math.PI * 45 * (1 - complexity / 100)"
+              :stroke-dashoffset="2 * Math.PI * 45 * (1 - complexity_chatgpt / 100)"
               stroke-linecap="round"
               transform="rotate(-90 50 50)"
             />
           </svg>
         </div>
-        <h2>COMPLEJIDAD</h2>
-        <p class="percentage">{{ complexity }}%</p>
+        <h2>COMPLEJIDAD CHATGPT</h2>
+        <p class="percentage">{{ complexity_chatgpt.toFixed(2) }}%</p>
+      </div>
+
+      <!-- COMPLEJIDAD DEEPSEEK -->
+      <div class="metric">
+        <div class="progress-circle">
+          <svg width="100" height="100">
+            <circle cx="50" cy="50" r="45" stroke="#e6e6e6" stroke-width="10" fill="none" />
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              stroke="#ff5733"
+              stroke-width="10"
+              fill="none"
+              :stroke-dasharray="2 * Math.PI * 45"
+              :stroke-dashoffset="2 * Math.PI * 45 * (1 - complexity_deepseek / 100)"
+              stroke-linecap="round"
+              transform="rotate(-90 50 50)"
+            />
+          </svg>
+        </div>
+        <h2>COMPLEJIDAD DEEPSEEK</h2>
+        <p class="percentage">{{ complexity_deepseek.toFixed(2) }}%</p>
       </div>
     </div>
 
@@ -59,146 +84,83 @@
         <li>Similitud de Jaccard: {{ metrics.jaccard.toFixed(2) }}</li>
         <li>Similitud de Coseno: {{ metrics.cosine.toFixed(2) }}</li>
         <li>Distancia de Levenshtein: {{ metrics.levenshtein }}</li>
-        <li>FRE (Flesch Reading Ease): {{ metrics.fre.toFixed(2) }}</li>
-        <li>SMOG Index: {{ metrics.smog.toFixed(2) }}</li>
-        <li>UniEval: {{ metrics.unieval.toFixed(2) }}</li>
+      </ul>
+      <h4>ChatGPT:</h4>
+      <ul>
+        <li>FRE: {{ metrics.chatgpt.fre.toFixed(2) }}</li>
+        <li>SMOG Index: {{ metrics.chatgpt.smog.toFixed(2) }}</li>
+        <li>UniEval: {{ metrics.chatgpt.unieval.toFixed(2) }}</li>
+      </ul>
+      <h4>DeepSeek:</h4>
+      <ul>
+        <li>FRE: {{ metrics.deepseek.fre.toFixed(2) }}</li>
+        <li>SMOG Index: {{ metrics.deepseek.smog.toFixed(2) }}</li>
+        <li>UniEval: {{ metrics.deepseek.unieval.toFixed(2) }}</li>
       </ul>
     </div>
   </div>
 </template>
 
 <script>
-import { distance as levenshtein } from 'fastest-levenshtein';
+import axios from 'axios';
 
 export default {
   name: 'MetricsView',
   data() {
     return {
       similarity: 0,
-      complexity: 0,
+      complexity_chatgpt: 0,
+      complexity_deepseek: 0,
       showDetails: false,
       metrics: {
         jaccard: 0,
         cosine: 0,
-        fre: 0,
-        smog: 0,
         levenshtein: 0,
-        unieval: 0
+        chatgpt: {
+          fre: 0,
+          smog: 0,
+          unieval: 0
+        },
+        deepseek: {
+          fre: 0,
+          smog: 0,
+          unieval: 0
+        }
       }
     };
   },
-  computed: {
-    chatgptText() {
-      return this.$route.params.chatgpt || '';
-    },
-    deepseekText() {
-      return this.$route.params.deepseek || '';
+  async mounted() {
+    const resultId = this.$route.query.result_id;
+    console.log('Result ID from query:', resultId);
+    if (resultId) {
+      try {
+        const response = await axios.get(`http://localhost:8000/api/metrics/${resultId}/`);
+        console.log('API response:', response.data);
+
+        this.similarity = response.data.similarity || 0;
+        this.complexity_chatgpt = response.data.complexity_chatgpt || 0;
+        this.complexity_deepseek = response.data.complexity_deepseek || 0;
+
+        this.metrics = {
+          jaccard: response.data.similarity_details.jaccard,
+          cosine: response.data.similarity_details.cosine,
+          levenshtein: response.data.similarity_details.levenshtein,
+          chatgpt: response.data.details_chatgpt,
+          deepseek: response.data.details_deepseek
+        };
+
+      } catch (error) {
+        console.error('Error loading metrics:', error);
+      }
     }
   },
-  mounted() {
-    this.calculateMetrics();
-  },
+
   methods: {
     toggleDetails() {
       this.showDetails = !this.showDetails;
     },
     evaluateAnother() {
       this.$router.push({ name: 'benchmark' });
-    },
-    calculateMetrics() {
-      const text1 = this.chatgptText;
-      const text2 = this.deepseekText;
-
-      const jaccard = this.jaccardSimilarity(text1, text2);
-      const cosine = this.cosineSimilarity(text1, text2);
-      const lev = levenshtein(text1, text2);
-      const fre = this.fleschReadingEase(text2);
-      const smog = this.smogIndex(text2);
-      const unieval = this.simulateUniEval(text2);
-
-      const similarityPercent = ((jaccard + cosine + (1 - lev / Math.max(text1.length, 1))) / 3) * 100;
-      const complexityPercent = (this.normalizeFRE(fre) + this.normalizeSMOG(smog) + unieval) / 3;
-
-      this.metrics = { jaccard, cosine, fre, smog, levenshtein: lev, unieval };
-      this.similarity = Math.round(similarityPercent);
-      this.complexity = Math.round(complexityPercent);
-    },
-    simulateUniEval(text) {
-      const length = text.length;
-      if (length < 100) return 40;
-      if (length < 250) return 60;
-      if (length < 500) return 75;
-      return 90;
-    },
-    jaccardSimilarity(str1, str2) {
-      const a = new Set(str1.toLowerCase().split(/\s+/));
-      const b = new Set(str2.toLowerCase().split(/\s+/));
-      const inter = new Set([...a].filter(x => b.has(x)));
-      const union = new Set([...a, ...b]);
-      return inter.size / union.size || 0;
-    },
-    cosineSimilarity(str1, str2) {
-      const getFrequency = (text) => {
-        const words = text.toLowerCase().match(/\w+/g) || [];
-        const freq = {};
-        words.forEach(word => (freq[word] = (freq[word] || 0) + 1));
-        return freq;
-      };
-
-      const freq1 = getFrequency(str1);
-      const freq2 = getFrequency(str2);
-
-      const allWords = new Set([...Object.keys(freq1), ...Object.keys(freq2)]);
-      const vec1 = [], vec2 = [];
-
-      allWords.forEach(word => {
-        vec1.push(freq1[word] || 0);
-        vec2.push(freq2[word] || 0);
-      });
-
-      const dot = vec1.reduce((acc, val, i) => acc + val * vec2[i], 0);
-      const magnitude = (vec) => Math.sqrt(vec.reduce((acc, val) => acc + val * val, 0));
-      return dot / (magnitude(vec1) * magnitude(vec2) || 1);
-    },
-    fleschReadingEase(text) {
-      const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0).length;
-      const words = text.split(/\s+/).filter(w => w.trim().length > 0).length;
-      const syllables = this.countTotalSyllables(text);
-
-      if (sentences === 0 || words === 0) return 0;
-
-      return 206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words);
-    },
-    smogIndex(text) {
-      const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 0).length;
-      const polysyllables = this.countPolysyllables(text);
-
-      if (sentences === 0) return 0;
-
-      return 1.043 * Math.sqrt(polysyllables * (30 / sentences)) + 3.1291;
-    },
-    countSyllables(word) {
-      word = word.toLowerCase();
-      if (word.length <= 3) return 1;
-      word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
-      word = word.replace(/^y/, '');
-      const matches = word.match(/[aeiouy]{1,2}/g);
-      return matches ? matches.length : 1;
-    },
-    countTotalSyllables(text) {
-      const words = text.split(/\s+/).filter(w => w.trim().length > 0);
-      return words.reduce((acc, word) => acc + this.countSyllables(word), 0);
-    },
-    countPolysyllables(text) {
-      const words = text.split(/\s+/).filter(w => w.trim().length > 0);
-      return words.filter(w => this.countSyllables(w) >= 3).length;
-    },
-    normalizeFRE(score) {
-      return Math.min(Math.max(score, 0), 100);
-    },
-    normalizeSMOG(score) {
-      const max = 18, min = 3;
-      return 100 - ((score - min) / (max - min)) * 100;
     }
   }
 };
@@ -220,6 +182,7 @@ export default {
   justify-content: center;
   gap: 2rem;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
 }
 .metric {
   background: #fff;

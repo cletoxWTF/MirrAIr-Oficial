@@ -1,456 +1,557 @@
 <template>
-  <div class="benchmark">
-    <h1>Benchmarking para IAs</h1>
+  <div class="benchmark-container">
+    <h1 class="title">Benchmarking de Modelos de Lenguaje</h1>
 
+    <!-- Mensajes de error -->
     <div v-if="errorMessage" class="error-message">
       <p>{{ errorMessage }}</p>
+      <button @click="errorMessage = ''" class="close-button">×</button>
     </div>
 
+    <!-- Sección de entrada -->
     <div class="input-section">
-      <div class="option-card">
-        <h2>Escriba las reglas o adjunte un archivo</h2>
-
-        <textarea
-          v-model="rules"
-          placeholder="Escribe tus reglas aquí..."
-          class="rules-textarea"
-          :disabled="isFileAttached"
-          @input="handleTextInput"
-        ></textarea>
-
-        <div class="buttons-row">
-          <div class="file-upload">
-            <input
-              type="file"
-              accept=".txt,.hrf"
-              @change="handleFileUpload"
-              class="file-input"
-              id="fileInput"
-              :disabled="isTextEntered"
-            />
-            <label for="fileInput" class="upload-button">Adjuntar archivo (.txt o .hrf)</label>
-            <span v-if="fileName" class="file-name">{{ fileName }}</span>
+      <div class="card">
+        <h2>Ingrese su texto o suba un archivo</h2>
+        <div class="input-methods">
+          <!-- Método 1: Textarea -->
+          <div class="method" :class="{ 'active': inputMethod === 'text' }">
+            <h3>Escribir texto</h3>
+            <textarea
+              v-model="textInput"
+              placeholder="Escribe aquí el texto a analizar..."
+              class="text-input"
+              @focus="inputMethod = 'text'"
+            ></textarea>
           </div>
-
-          <button
-            @click="submitBenchmark"
-            class="submit-button"
-            :disabled="!isTextEntered && !isFileAttached"
-          >
-            Enviar
-          </button>
+          
+          <!-- Método 2: Subir archivo -->
+          <div class="method" :class="{ 'active': inputMethod === 'file' }">
+            <h3>Subir archivo</h3>
+            <div class="file-upload-area" @click="triggerFileInput">
+              <div v-if="!selectedFile" class="upload-prompt">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Arrastra un archivo aquí o haz clic para seleccionar</p>
+                <p class="formats">Formatos aceptados: .txt, .hrf</p>
+              </div>
+              <div v-else class="file-info">
+                <i class="fas fa-file-alt"></i>
+                <p>{{ selectedFile.name }}</p>
+                <p class="file-size">{{ formatFileSize(selectedFile.size) }}</p>
+              </div>
+              <input
+                type="file"
+                ref="fileInput"
+                @change="handleFileSelect"
+                accept=".txt,.hrf"
+                style="display: none;"
+              >
+            </div>
+          </div>
         </div>
+
+        <button
+          @click="runBenchmark"
+          class="submit-button"
+          :disabled="!isFormValid || processing"
+        >
+          <span v-if="!processing">Ejecutar Benchmark</span>
+          <span v-else class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Procesando...
+          </span>
+        </button>
       </div>
     </div>
 
-    <div class="models-section">
-      <div class="model-column">
-        <h3>ChatGPT (Simulado)</h3>
-        <img
-          src="https://cdn.pixabay.com/photo/2023/05/08/00/43/chatgpt-7977357_1280.png"
-          alt="ChatGPT Logo"
-          class="model-logo"
-        />
-        <div v-if="chatGPTResponse">
-          <p>{{ chatGPTResponse }}</p>
-          <button @click="downloadChatGPT" class="download-button">Descargar traducción</button>
+    <!-- Resultados -->
+    <div v-if="results" class="results-section">
+      <div class="models-comparison">
+        <!-- Resultado ChatGPT -->
+        <div class="model-result">
+          <div class="model-header">
+            <img src="https://cdn.pixabay.com/photo/2023/05/08/00/43/chatgpt-7977357_1280.png" alt="ChatGPT">
+            <h3>ChatGPT</h3>
+          </div>
+          <div class="result-content">
+            <div class="result-text" v-html="formatResponse(results.chatgpt)"></div>
+            <button @click="downloadResult('chatgpt')" class="download-btn">
+              <i class="fas fa-download"></i> Descargar
+            </button>
+          </div>
+        </div>
+
+        <!-- Resultado DeepSeek -->
+        <div class="model-result">
+          <div class="model-header">
+            <img src="https://brandlogos.net/wp-content/uploads/2025/02/deepseek_logo_icon-logo_brandlogos.net_s5bgc-512x389.png" alt="DeepSeek">
+            <h3>DeepSeek</h3>
+          </div>
+          <div class="result-content">
+            <div class="result-text" v-html="formatResponse(results.deepseek)"></div>
+            <button @click="downloadResult('deepseek')" class="download-btn">
+              <i class="fas fa-download"></i> Descargar
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="model-column">
-        <h3>DeepSeek</h3>
-        <img
-          src="https://brandlogos.net/wp-content/uploads/2025/02/deepseek_logo_icon-logo_brandlogos.net_s5bgc-512x389.png"
-          alt="DeepSeek Logo"
-          class="model-logo"
-        />
-        <div v-if="deepSeekResponse">
-          <p>{{ deepSeekResponse }}</p>
-          <button @click="downloadDeepSeek" class="download-button">Descargar traducción</button>
-        </div>
+      <div class="actions">
+        <button @click="viewMetrics" class="metrics-button">
+          <i class="fas fa-chart-bar"></i> Ver Métricas Detalladas
+        </button>
+        <button @click="resetForm" class="reset-button">
+          <i class="fas fa-redo"></i> Nueva Prueba
+        </button>
       </div>
-    </div>
-
-    <div class="compare-section">
-      <button 
-        @click="compareResults" 
-        class="compare-button" 
-        :disabled="!canCompare"
-      >
-        Comparar
-      </button>
     </div>
   </div>
 </template>
 
 <script>
-import axios from "axios";
+import api from '@/services/api';  // ⬅️ ESTA LÍNEA ES CLAVE
 
 export default {
-  name: "BenchmarkView",
+  name: 'BenchmarkView',
   data() {
     return {
-      rules: "",
-      file: null,
-      fileName: "",
-      isTextEntered: false, // Controla si el usuario ha escrito en el textarea
-      isFileAttached: false, // Controla si se ha adjuntado un archivo
-      loading: false,
-      chatGPTResponse: "", // Respuesta de ChatGPT (Simulada)
-      deepSeekResponse: "", // Respuesta de DeepSeek
-      errorMessage: "", // Mensaje de error
+      inputMethod: 'text', // 'text' o 'file'
+      textInput: '',
+      selectedFile: null,
+      processing: false,
+      errorMessage: '',
+      results: null,
+      apiBaseUrl: 'http://localhost:8000/api', // Ajusta según tu configuración
     };
   },
   computed: {
-    // Esta propiedad computada se encarga de habilitar el botón "Comparar" solo cuando ambas respuestas estén disponibles.
-    canCompare() {
-      return this.chatGPTResponse && this.deepSeekResponse;
+    isFormValid() {
+      return this.textInput.trim() !== '' || this.selectedFile !== null;
     }
   },
   methods: {
-    // Función para manejar cuando se escribe en el textarea
-    handleTextInput() {
-      this.isTextEntered = this.rules.trim() !== "";
-      this.isFileAttached = false; // Si escribe, desactivar la opción de adjuntar archivo
+    triggerFileInput() {
+      this.inputMethod = 'file';
+      this.$refs.fileInput.click();
     },
-
-    // Función para manejar la carga de archivo
-    handleFileUpload(event) {
-      this.file = event.target.files[0];
-      this.fileName = this.file ? this.file.name : "";
-      this.isFileAttached = !!this.file;
-      this.isTextEntered = false; // Si adjunta archivo, desactivar la opción de escribir
-    },
-
-    async submitBenchmark() {
-      this.loading = true;
-      const prompt =
-        "I need you to translate the information into structured natural language and explain it to me in a paragraph in plain text format, without literals, bullet points, or HTML. I'm 15 years old.:";
-
-      // Obtener contenido de `rules` o el archivo
-      const content =
-        this.rules.trim() || (await this.readFileContent(this.file));
-
-      // Validación para asegurarse que hay contenido
-      if (!content || content.trim() === "") {
-        console.log("No se ingresó texto ni se seleccionó un archivo válido");
-        alert("No input provided!");
-        this.loading = false;
-        return;
-      }
-
-      console.log("Contenido a enviar:", content); // Verifica si el contenido es correcto
-
-      const requestPayload = {
-        prompt: `${prompt}\n\n${content}`,
-      };
-
-      // Verificamos el formato del payload antes de enviarlo
-      console.log("Payload antes de enviar a la API:", JSON.stringify(requestPayload));
-
-      try {
-        // Simulamos la respuesta de ChatGPT
-        this.chatGPTResponse = `This is a set of rules for a Tic-Tac-Toe game written in a logical language. It defines the game's structure and how it works...`;
-
-        // Solicitar respuesta de DeepSeek
-        const deepSeekResponse = await this.fetchDeepSeekResponse(requestPayload);
-        this.deepSeekResponse = deepSeekResponse;
-
-      } catch (error) {
-        console.error("Error en la consulta a las APIs:", error);
-        this.errorMessage = `Error al conectar con la API: ${error.message}`;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async readFileContent(file) {
+    handleFileSelect(event) {
+      const file = event.target.files[0];
       if (file) {
-        const reader = new FileReader();
-        return new Promise((resolve, reject) => {
-          reader.onload = () => {
-            console.log("Contenido del archivo leído:", reader.result); // Verifica el contenido leído
-            resolve(reader.result);
-          };
-          reader.onerror = reject;
-          reader.readAsText(file);
-        });
+        // Validar tipo de archivo
+        const validTypes = ['.txt', '.hrf'];
+        const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!validTypes.includes(fileExt)) {
+          this.errorMessage = 'Solo se aceptan archivos .txt o .hrf';
+          return;
+        }
+
+        // Validar tamaño (ejemplo: 5MB máximo)
+        if (file.size > 5 * 1024 * 1024) {
+          this.errorMessage = 'El archivo es demasiado grande (máximo 5MB)';
+          return;
+        }
+
+        this.selectedFile = file;
+        this.textInput = ''; // Limpiar textarea si había texto
       }
-      return "";
     },
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    async runBenchmark() {
+      this.processing = true;
+      this.errorMessage = '';
+      this.results = null;
 
-    async fetchDeepSeekResponse(payload) {
       try {
-        if (!payload || typeof payload !== "object" || !payload.prompt) {
-          throw new Error("El contenido del mensaje está vacío o mal formado.");
-        }
-
-        // Verificamos que el payload tenga la estructura correcta
-        console.log("Verificando estructura del payload antes de enviarlo:", payload);
-
-        // Realizamos la llamada a la API para obtener la respuesta de DeepSeek
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization:
-              "Bearer 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",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:8080/", // Opcional
-            "X-Title": "MirrAIr", // Opcional
-          },
-          body: JSON.stringify({
-            model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
-            messages: [
-              {
-                role: "user",
-                content: payload.prompt,
-              },
-            ],
-          }),
+        const response = await api.sendBenchmark({
+          text: this.selectedFile ? '' : this.textInput,
+          file: this.selectedFile
         });
 
-        // Verificamos si la respuesta es exitosa
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Error en la solicitud: ${response.status} ${response.statusText}. Detalles: ${errorText}`
-          );
-        }
-
-        // Obtener el texto de la respuesta
-        let data;
-        const contentType = response.headers.get("Content-Type");
-        if (contentType && contentType.includes("application/json")) {
-          data = await response.json(); // Convertir la respuesta a JSON
-        } else {
-          const text = await response.text();
-          throw new Error(`Respuesta no es JSON, recibió: ${text}`);
-        }
-
-        if (data?.choices?.[0]?.message?.content) {
-          return data.choices[0].message.content;
-        } else {
-          throw new Error("Respuesta de DeepSeek inválida o vacía.");
+        if (response) {
+          this.results = {
+            id: response.id,
+            chatgpt: response.chatgpt,
+            deepseek: response.deepseek,
+            metrics: response.metrics
+          };
         }
       } catch (error) {
-        console.error("Error al obtener la respuesta de DeepSeek:", error);
-        this.errorMessage = `Error al conectar con DeepSeek: ${error.message}`;
-        throw error;
+        this.handleApiError(error);
+      } finally {
+        this.processing = false;
       }
     },
-
-    // Funciones de descarga
-    downloadChatGPT() {
-      const blob = new Blob([this.chatGPTResponse], { type: "text/plain" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "chatgpt_translation.txt";
-      link.click();
-    },
-
-    downloadDeepSeek() {
-      const blob = new Blob([this.deepSeekResponse], { type: "text/plain" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "deepseek_translation.txt";
-      link.click();
-    },
-
-    compareResults() {
-      this.$router.push({
-        name: "metrics",
-        params: {
-          chatgpt: this.chatGPTResponse,
-          deepseek: this.deepSeekResponse,
-        },
+    async readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsText(file);
       });
     },
-  },
+    handleApiError(error) {
+      if (error.response) {
+        // Error de la API
+        if (error.response.status === 400) {
+          this.errorMessage = error.response.data.error || 'Datos inválidos enviados al servidor';
+        } else if (error.response.status === 413) {
+          this.errorMessage = 'El archivo es demasiado grande para procesar';
+        } else if (error.response.status === 415) {
+          this.errorMessage = 'Tipo de archivo no soportado';
+        } else if (error.response.status === 500) {
+          this.errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo más tarde.';
+        } else {
+          this.errorMessage = `Error del servidor: ${error.response.status}`;
+        }
+      } else if (error.request) {
+        // La petición fue hecha pero no hubo respuesta
+        this.errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión.';
+      } else {
+        // Error al configurar la petición
+        this.errorMessage = 'Error al preparar la solicitud';
+      }
+      
+      console.error('Error detallado:', error);
+    },
+    formatResponse(text) {
+      // Formatea el texto para mostrar saltos de línea correctamente
+      if (!text) return '';
+      return text.replace(/\n/g, '<br>');
+    },
+    downloadResult(model) {
+      if (!this.results) return;
+      
+      const content = model === 'chatgpt' ? this.results.chatgpt : this.results.deepseek;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      link.href = url;
+      link.download = `resultado_${model}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    viewMetrics() {
+      if (this.results && this.results.id) {
+        this.$router.push({
+          name: 'metrics',
+          query: { result_id: this.results.id }
+        });
+      } else {
+        console.error('No se encontró ID para la métrica.');
+      }
+    },
+    resetForm() {
+      this.textInput = '';
+      this.selectedFile = null;
+      this.results = null;
+      this.inputMethod = 'text';
+    }
+  }
 };
 </script>
 
-
 <style scoped>
-.benchmark {
-  max-width: 800px;
+/* Estilos generales */
+.benchmark-container {
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-h1 {
+.title {
   text-align: center;
-  margin-bottom: 30px;
   color: #2c3e50;
+  margin-bottom: 2rem;
+  font-size: 2.2rem;
 }
 
+/* Sección de entrada */
 .input-section {
-  margin-bottom: 40px;
+  margin-bottom: 3rem;
 }
 
-.option-card {
+.card {
   background: white;
   border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.option-card h2 {
+.card h2 {
   margin-top: 0;
-  color: #2c3e50;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  color: #34495e;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
 }
 
-.rules-textarea {
+.input-methods {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.method {
+  flex: 1;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.method.active {
+  border-color: #3498db;
+  background-color: #f8fafc;
+}
+
+.method h3 {
+  margin-top: 0;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.text-input {
   width: 100%;
   height: 200px;
-  padding: 15px;
+  padding: 1rem;
   border: 1px solid #ddd;
   border-radius: 5px;
   resize: vertical;
-  font-family: monospace;
-  margin-bottom: 20px;
+  font-family: inherit;
+  font-size: 1rem;
 }
 
-.buttons-row {
+.file-upload-area {
+  height: 200px;
   display: flex;
-  gap: 15px;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-}
-
-.file-upload {
-  position: relative;
-  display: inline-block;
-}
-
-.file-input {
-  display: none;
-}
-
-.upload-button {
-  background-color: #3498db;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 4px;
   cursor: pointer;
+  background-color: #f9f9f9;
+  border-radius: 5px;
   transition: background-color 0.3s;
-  font-size: 0.9rem;
 }
 
-.upload-button:hover {
-  background-color: #2980b9;
+.file-upload-area:hover {
+  background-color: #f0f0f0;
 }
 
-.file-name {
-  margin-left: 10px;
+.upload-prompt {
+  text-align: center;
   color: #7f8c8d;
+}
+
+.upload-prompt i {
+  font-size: 2.5rem;
+  color: #3498db;
+  margin-bottom: 1rem;
+}
+
+.formats {
   font-size: 0.9rem;
+  color: #95a5a6;
+  margin-top: 0.5rem;
+}
+
+.file-info {
+  text-align: center;
+}
+
+.file-info i {
+  font-size: 2rem;
+  color: #3498db;
+  margin-bottom: 0.5rem;
+}
+
+.file-size {
+  font-size: 0.9rem;
+  color: #95a5a6;
 }
 
 .submit-button {
-  background-color: #2ecc71;
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  background-color: #3498db;
   color: white;
   border: none;
-  padding: 10px 25px;
-  border-radius: 4px;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
   transition: background-color 0.3s;
 }
 
 .submit-button:hover {
-  background-color: #27ae60;
+  background-color: #2980b9;
 }
 
-.models-section {
+.submit-button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Mensajes de error */
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 2rem;
   display: flex;
-  gap: 30px;
-  margin-bottom: 30px;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.model-column {
+.close-button {
+  background: none;
+  border: none;
+  color: #c62828;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+}
+
+/* Resultados */
+.results-section {
+  margin-top: 3rem;
+}
+
+.models-comparison {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.model-result {
   flex: 1;
-  text-align: center;
   background: white;
   border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.model-column h3 {
-  margin-top: 0;
-  color: #2c3e50;
+.model-header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
   border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
 }
 
-.model-logo {
-  max-width: 120px;
-  max-height: 120px;
-  margin: 15px auto;
-  display: block;
+.model-header img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-right: 1rem;
 }
 
-.download-button {
-  background-color: #9b59b6;
-  color: white;
+.model-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.result-content {
+  padding: 1.5rem;
+}
+
+.result-text {
+  height: 300px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  color: #34495e;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #e3f2fd;
+  color: #1976d2;
   border: none;
-  padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 10px;
   transition: background-color 0.3s;
 }
 
-.download-button:hover {
-  background-color: #8e44ad;
+.download-btn:hover {
+  background-color: #bbdefb;
 }
 
-.compare-section {
-  text-align: center;
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
 }
 
-.compare-button {
-  background-color: #e67e22;
+.metrics-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #4caf50;
   color: white;
   border: none;
-  padding: 12px 30px;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
-  font-size: 1.1rem;
-  font-weight: bold;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   transition: background-color 0.3s;
 }
 
-.compare-button:hover {
-  background-color: #d35400;
+.metrics-button:hover {
+  background-color: #388e3c;
 }
 
+.reset-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.3s;
+}
+
+.reset-button:hover {
+  background-color: #d32f2f;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .models-section {
+  .input-methods {
     flex-direction: column;
   }
   
-  .buttons-row {
+  .models-comparison {
     flex-direction: column;
-    align-items: flex-start;
   }
-}
-
-.responses-section {
-  margin-top: 30px;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-}
-
-.error-message {
-  color: red;
-  background-color: #ffcccc;
-  padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 5px;
+  
+  .actions {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 </style>

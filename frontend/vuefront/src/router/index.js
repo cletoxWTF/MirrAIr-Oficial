@@ -23,8 +23,9 @@ const routes = [
   {
     path: '/metrics',
     name: 'metrics',
-    component: MetricsView
+    component: () => import('@/views/MetricsView.vue')
   }
+
 ];
 
 const router = createRouter({
